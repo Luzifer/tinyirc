@@ -26,3 +26,19 @@ USER=tezrian
 # echo "PRIVMSG #tezrian :Test" | envrun tinyirc
 :tezrian!tezrian@tezrian.tmi.twitch.tv JOIN #tezrian
 ```
+
+More complex example:
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+{
+
+	for i in $(seq 1 5); do
+		echo "PRIVMSG #tezrian :Counter: $i"
+		sleep 5
+	done
+
+} | envrun ./tinyirc
+```
