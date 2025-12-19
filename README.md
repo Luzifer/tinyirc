@@ -1,8 +1,6 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/Luzifer/tinyirc)](https://goreportcard.com/report/github.com/Luzifer/tinyirc)
-![](https://badges.fyi/github/license/Luzifer/tinyirc)
-![](https://badges.fyi/github/downloads/Luzifer/tinyirc)
-![](https://badges.fyi/github/latest-release/Luzifer/tinyirc)
-![](https://knut.in/project-status/tinyirc)
+![](https://img.shields.io/github/license/Luzifer/tinyirc)
+![](https://img.shields.io/github/downloads/Luzifer/tinyirc/total)
+![](https://img.shields.io/github/v/release/Luzifer/tinyirc)
 
 # Luzifer / tinyirc
 
