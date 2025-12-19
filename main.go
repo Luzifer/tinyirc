@@ -11,9 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-irc/irc"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/go-irc/irc/v2"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Luzifer/rconfig/v2"
 )
@@ -41,10 +40,26 @@ var (
 	version = "dev"
 )
 
-func init() {
+func initApp() error {
 	rconfig.AutoEnv(true)
 	if err := rconfig.ParseAndValidate(&cfg); err != nil {
-		log.Fatalf("Unable to parse commandline options: %s", err)
+		return fmt.Errorf("parsing CLI options: %w", err)
+	}
+
+	l, err := logrus.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		return fmt.Errorf("parsing log-level: %w", err)
+	}
+	logrus.SetLevel(l)
+
+	return nil
+}
+
+func main() {
+	var err error
+
+	if err = initApp(); err != nil {
+		logrus.WithError(err).Fatal("initializing app")
 	}
 
 	if cfg.VersionAndExit {
@@ -52,25 +67,17 @@ func init() {
 		os.Exit(0)
 	}
 
-	if l, err := log.ParseLevel(cfg.LogLevel); err != nil {
-		log.WithError(err).Fatal("Unable to parse log level")
-	} else {
-		log.SetLevel(l)
-	}
-}
-
-func main() {
 	connEstablished.Add(1)
 
 	client, conn, err := connect()
 	if err != nil {
-		log.WithError(err).Fatal("Unable to connect")
+		logrus.WithError(err).Fatal("connecting to IRC server")
 	}
 	defer conn.Close()
 
 	go func() {
 		if err := client.Run(); err != nil && !done {
-			log.WithError(err).Fatal("IRC client reported error")
+			logrus.WithError(err).Fatal("IRC client reported error")
 		}
 	}()
 
@@ -79,30 +86,30 @@ func main() {
 	defer client.WriteMessage(&irc.Message{Command: "QUIT"})
 
 	for _, c := range cfg.Join {
-		logger := log.WithField("channel", c)
-		logger.Debug("Joining channel")
+		logger := logrus.WithField("channel", c)
+		logger.Debug("joining channel")
 		if err = client.WriteMessage(&irc.Message{
 			Command: "JOIN",
 			Params:  []string{c},
 		}); err != nil {
-			logger.WithError(err).Error("Unable to join channel")
+			logger.WithError(err).Error("joining channel")
 		}
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		logger := log.WithField("line", line)
+		logger := logrus.WithField("line", line)
 
-		logger.Debug("Processing line")
+		logger.Debug("processing line")
 		msg, err := irc.ParseMessage(line)
 		if err != nil {
-			logger.WithError(err).Error("Unable to parse line")
+			logger.WithError(err).Error("parsing line")
 			continue
 		}
 
 		if err = client.WriteMessage(msg); err != nil {
-			logger.WithError(err).Error("Unable to send message")
+			logger.WithError(err).Error("sending message")
 		}
 	}
 
@@ -120,7 +127,7 @@ func connect() (*irc.Client, net.Conn, error) {
 		"user":   cfg.User != "",
 	} {
 		if !r {
-			return nil, nil, errors.Errorf("missing configuration: %s", f)
+			return nil, nil, fmt.Errorf("missing configuration: %s", f)
 		}
 	}
 
@@ -131,7 +138,7 @@ func connect() (*irc.Client, net.Conn, error) {
 	}
 
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "creating tcp connection")
+		return nil, nil, fmt.Errorf("creating tcp connection: %w", err)
 	}
 
 	nick := cfg.Nick
