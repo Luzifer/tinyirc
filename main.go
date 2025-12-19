@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-irc/irc/v2"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/irc.v4"
 
 	"github.com/Luzifer/rconfig/v2"
 )
