@@ -1,7 +1,9 @@
+// Small IRC connector
 package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -11,11 +13,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Luzifer/rconfig/v2"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/irc.v4"
-
-	"github.com/Luzifer/rconfig/v2"
 )
+
+const connectTimeout = 30 * time.Second
 
 var (
 	cfg = struct {
@@ -63,7 +66,7 @@ func main() {
 	}
 
 	if cfg.VersionAndExit {
-		fmt.Printf("tinyirc %s\n", version)
+		fmt.Printf("tinyirc %s\n", version) //nolint:forbidigo // printing version to stdout is fine
 		os.Exit(0)
 	}
 
@@ -73,7 +76,7 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Fatal("connecting to IRC server")
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint:errcheck // this is just being nice, after program is off either way
 
 	go func() {
 		if err := client.Run(); err != nil && !done {
@@ -83,7 +86,7 @@ func main() {
 
 	connEstablished.Wait()
 
-	defer client.WriteMessage(&irc.Message{Command: "QUIT"})
+	defer client.WriteMessage(&irc.Message{Command: "QUIT"}) //nolint:errcheck // this is just being nice, after program is off either way
 
 	for _, c := range cfg.Join {
 		logger := logrus.WithField("channel", c)
@@ -131,10 +134,14 @@ func connect() (*irc.Client, net.Conn, error) {
 		}
 	}
 
+	addr := net.JoinHostPort(cfg.Server, strconv.FormatInt(cfg.Port, 10))
+	ctx := context.Background()
+	dialer := &net.Dialer{Timeout: connectTimeout}
+
 	if cfg.TLS {
-		conn, err = tls.Dial("tcp", fmt.Sprintf("%s:%d", cfg.Server, cfg.Port), nil)
+		conn, err = (&tls.Dialer{NetDialer: dialer}).DialContext(ctx, "tcp", addr)
 	} else {
-		conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", cfg.Server, cfg.Port))
+		conn, err = dialer.DialContext(ctx, "tcp", addr)
 	}
 
 	if err != nil {
@@ -158,7 +165,7 @@ func connect() (*irc.Client, net.Conn, error) {
 	}), conn, nil
 }
 
-func printMessage(c *irc.Client, m *irc.Message) {
+func printMessage(_ *irc.Client, m *irc.Message) {
 	if m.Command == "001" {
 		connWaitOnce.Do(connEstablished.Done)
 	}
@@ -172,5 +179,5 @@ func printMessage(c *irc.Client, m *irc.Message) {
 		return
 	}
 
-	fmt.Println(strings.TrimSpace(m.String()))
+	fmt.Println(strings.TrimSpace(m.String())) //nolint:forbidigo // intended to be parsed by programs
 }
