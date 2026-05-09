@@ -1,9 +1,9 @@
 module github.com/Luzifer/tinyirc
 
-go 1.24.0
+go 1.25
 
 require (
-	github.com/Luzifer/rconfig/v2 v2.6.1
+	github.com/Luzifer/rconfig/v2 v2.6.2
 	github.com/sirupsen/logrus v1.9.4
 	gopkg.in/irc.v4 v4.0.0
 )
