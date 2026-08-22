@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/Luzifer/rconfig/v2 v2.6.2
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	gopkg.in/irc.v4 v4.0.0
 )
 
